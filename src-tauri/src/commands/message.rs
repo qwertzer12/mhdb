@@ -21,7 +21,7 @@ pub async fn greet_logic(pool: &SqlitePool, name: &str) -> Result<String, String
 
 #[tauri::command]
 pub async fn greet(app: tauri::AppHandle, name: &str) -> Result<String, String> {
-    let resource_path = app.path().resolve("testing.db", BaseDirectory::Resource)
+    let resource_path = app.path().resolve("database/testing.db", BaseDirectory::Resource)
         .map_err(|e| format!("Failed to resolve resource path: {}", e))?;
 
     let connection_string = format!("sqlite://{}", resource_path.to_string_lossy());

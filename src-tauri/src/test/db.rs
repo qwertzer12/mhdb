@@ -2,22 +2,23 @@ use crate::commands::message::greet_logic;
 use crate::models::game::Game;
 use sqlx::sqlite::SqlitePool;
 
+const DATABASE_URL: &str = "sqlite://database/testing.db";
 #[tokio::test]
 async fn test_greet_external() {
-    let pool = SqlitePool::connect("sqlite://testing.db").await.expect("failed to connect");
+    let pool = SqlitePool::connect(DATABASE_URL).await.expect("failed to connect");
     let result = greet_logic(&pool, "Universe");
     assert_eq!(result.await.unwrap(), "Hello, Universe! Found game in DB: Monster Hunter (Year: 2004)");
 }
 
 #[tokio::test]
 async fn init_db_connection() {
-    let pool = SqlitePool::connect("sqlite://testing.db").await;
+    let pool = SqlitePool::connect(DATABASE_URL).await;
     assert!(pool.is_ok());
 }
 
 #[tokio::test]
 async fn db_write() -> Result<(), Box<dyn std::error::Error>> {
-    let pool = SqlitePool::connect("sqlite://testing.db").await?;
+    let pool = SqlitePool::connect(DATABASE_URL).await?;
 
     sqlx::query("DROP TABLE IF EXISTS mh_games")
         .execute(&pool)
