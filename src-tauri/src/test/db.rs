@@ -1,5 +1,6 @@
 use crate::commands::message::greet;
-use rusqlite::{Connection, Result};
+use crate::models::game::Game;
+use sqlx::sqlite::SqlitePool;
 
 #[test]
 fn test_greet_external() {
@@ -7,28 +8,52 @@ fn test_greet_external() {
     assert_eq!(result, "Hello, Universe! You've been greeted from Rust!");
 }
 
-#[test]
-fn init_db_connection() {
-    let conn: Result<Connection, rusqlite::Error> = Connection::open_in_memory();
-    assert!(conn.is_ok());
+#[tokio::test]
+async fn init_db_connection() {
+    let pool = SqlitePool::connect("sqlite::memory:").await;
+    assert!(pool.is_ok());
 }
 
-#[test]
-fn db_write() -> Result<()> {
-    let conn = Connection::open_in_memory()?;
+#[tokio::test]
+async fn db_write() -> Result<(), Box<dyn std::error::Error>> {
+    let pool = SqlitePool::connect("sqlite::memory:").await?;
 
-    conn.execute(
-        "CREATE TABLE person (
-                  id    INTEGER PRIMARY KEY,
-                  name  TEXT NOT NULL
-                  )",
-        (),
-    )?;
-    let rows_affected = conn.execute(
-        "INSERT INTO person (name) VALUES (?1)",
-        ["Alice"],
-    )?;
-    assert_eq!(rows_affected, 1);
+    sqlx::query(
+        r#"CREATE TABLE mh_games (
+                  id    INTEGER PRIMARY KEY AUTOINCREMENT,
+                  name  TEXT NOT NULL,
+                  year  INTEGER NOT NULL
+                  )"#,
+    )
+    .execute(&pool)
+    .await?;
+
+    let insert_query = "INSERT INTO mh_games (name, year) VALUES ($1, $2)";
+    let games_data = vec![
+        ("Monster Hunter", 2004),
+        ("Monster Hunter Freedom", 2005),
+        ("Monster Hunter Tri", 2009),
+        ("Monster Hunter: World", 2018),
+    ];
+
+    for (name, year) in games_data {
+        sqlx::query(insert_query)
+            .bind(name)
+            .bind(year)
+            .execute(&pool)
+            .await?;
+    }
+
+
+    let games: Vec<Game> = sqlx::query_as("SELECT * FROM mh_games ORDER BY year")
+        .fetch_all(&pool)
+        .await?;
+
+    assert_eq!(games.len(), 4);
+    assert_eq!(games[0].name, "Monster Hunter");
+    assert_eq!(games[0].year, 2004);
+    assert_eq!(games[3].name, "Monster Hunter: World");
+    assert_eq!(games[3].year, 2018);
 
     Ok(())
 }
