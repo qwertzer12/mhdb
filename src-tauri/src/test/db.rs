@@ -1,10 +1,11 @@
-use crate::commands::message::greet;
+use crate::commands::message::greet_logic;
 use crate::models::game::Game;
 use sqlx::sqlite::SqlitePool;
 
 #[tokio::test]
 async fn test_greet_external() {
-    let result = greet("Universe");
+    let pool = SqlitePool::connect("sqlite://testing.db").await.expect("failed to connect");
+    let result = greet_logic(&pool, "Universe");
     assert_eq!(result.await.unwrap(), "Hello, Universe! Found game in DB: Monster Hunter (Year: 2004)");
 }
 

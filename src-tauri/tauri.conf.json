@@ -22,6 +22,9 @@
     }
   },
   "bundle": {
+    "resources": [
+      "testing.db"
+    ],
     "active": true,
     "targets": "all",
     "icon": [
